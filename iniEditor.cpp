@@ -1,20 +1,87 @@
 #include "iniEditor.h"
 
-//It 100% works. Creating new Section, named sectionNamed, if it doesn't exist
-void IniEdit::addSection(std::string filePath, std::string sectionName)
+void IniEdit::overWrite(std::string filePath, std::string newText)
 {
-	std::ofstream out(filePath, std::ios::app);
+	std::ofstream out(filePath, std::ios::out);
 
-	if (out.is_open() && !checkSection(filePath, sectionName))
+	if (out.is_open())
 	{
-		out << "\n" << '[' + sectionName + ']' << "\n";
+		out << newText;
 	}
-	//else throw "Error occured in addSection Function";
+	else throw "Can't open file. overWrite function";
 
 	out.close();
 }
 
-//It 100% works. Returns true, if Section named sectionName is already exists
+int IniEdit::strLength(std::string str)
+{
+	for (int i = 0; ; i++)
+		if (str[i] == '\0' && i != 0) return i;
+}
+
+int IniEdit::getSectionPos(std::string filePath, std::string sectionName)
+{
+	std::string allText = getAllTextInFile(filePath);
+
+	if (checkSection(filePath, sectionName)) return (int) allText.find('[' + sectionName + ']');
+	throw "There is no section. getSectionPos function";
+}
+
+int IniEdit::getVarPos(std::string filePath, std::string sectionName, std::string varName)
+{
+	std::string allText = getAllTextInFile(filePath);
+
+	if (checkVarInSection(filePath, sectionName, varName))
+	{
+		return allText.find(varName, (getSectionPos(filePath, sectionName) + strLength('[' + sectionName + ']')));
+	}
+	throw "In section no var. getVarPos function";
+}
+
+int IniEdit::getVarLineNumber(std::string filePath, std::string sectionName, std::string varName)
+{
+	std::ifstream in(filePath, std::ios::in);
+
+	std::string buffer;
+	bool sectionPassed = false;
+	int lineNumber = 0;
+
+	if (in.is_open())
+	{
+		while (std::getline(in, buffer))
+		{			
+			if (sectionPassed && (buffer.find(varName) != std::string::npos)) {
+				in.close();
+				return lineNumber;
+			}
+			else if (buffer.find('[' + sectionName + ']') != std::string::npos) //This could be a vulnerability, because the [ symbol may be contained in var name or varValue name
+				sectionPassed = true;
+
+			lineNumber++;
+		}
+	}
+	else throw "Can't open file. getVarLineNumber function";
+
+	in.close();
+}
+
+int IniEdit::getLineCount(std::string filePath)
+{
+	std::string buffer;
+	int lineNumber = 0;
+
+	std::ifstream in(filePath, std::ios::in);
+	if (in.is_open())
+	{
+		while (std::getline(in, buffer))
+			lineNumber++;
+		return lineNumber;
+	}
+	throw "Can't open file. getLineCount function";
+
+	in.close();
+}
+
 bool IniEdit::checkSection(std::string filePath, std::string sectionName)
 {
 	std::string allText = getAllTextInFile(filePath);
@@ -25,7 +92,22 @@ bool IniEdit::checkSection(std::string filePath, std::string sectionName)
 	return true;
 }
 
-//It 100% works. Returns string contains all the text of the file
+bool IniEdit::checkVarInSection(std::string filePath, std::string sectionName, std::string varName)
+{
+	std::string allText = getAllTextInFile(filePath);
+
+	int sectionPos = getSectionPos(filePath, sectionName);
+	int nextSectionPos = allText.find("[", (sectionPos + strLength('[' + sectionName + ']')));  //This could be a vulnerability, because the [ symbol may be contained in var name or varValue name
+	int varPos = allText.find(varName, sectionPos);
+
+	if (varPos != std::string::npos)
+	{
+		if (nextSectionPos == std::string::npos) return true;
+		else if (nextSectionPos > varPos) return true;
+	}
+	return false;
+}
+
 std::string IniEdit::getAllTextInFile(std::string filePath)
 {
 	std::ifstream in(filePath, std::ios::in);
@@ -38,150 +120,137 @@ std::string IniEdit::getAllTextInFile(std::string filePath)
 		while (std::getline(in, buffer))
 			allText += buffer + "\n";
 	}
-	else throw "Error occured in getAllTextInFile Function";
+	else throw "Can't open file. getAllTextInFile Function";
 
 	in.close();
 
 	return allText;
 }
 
-//It 100% works. Returns the number of the position [sectionName] in the string
-int IniEdit::getSectionPos(std::string filePath, std::string sectionName)
+void IniEdit::addSection(std::string filePath, std::string sectionName)
 {
-	std::string allText = getAllTextInFile(filePath);
+	std::ofstream out(filePath, std::ios::app);
 
-	if (allText.find(sectionName) == std::string::npos) throw "Error occured in getSectionPos";
-	return (int) allText.find('[' + sectionName + ']');
-}
-
-//It 100% works. Overwrites text in the file to the newText 
-void IniEdit::overWrite(std::string filePath, std::string newText)
-{
-	std::ofstream out(filePath, std::ios::out);
-
-	if (out.is_open())
+	if (out.is_open() && !checkSection(filePath, sectionName))
 	{
-		out << newText;
+		out << "\n\n" << '[' + sectionName + ']';
 	}
-	else throw "Error occured in overWrite Function";
+	//else throw "Error occured in addSection Function";
 
 	out.close();
 }
 
-//It 100% works. Returns the length of the string without \0
-int IniEdit::strLength(std::string str)
-{
-	for (int i = 0; ; i++)
-	{
-		if (str[i] == '\0' && i != 0) return --i;
-		if (str[i] == '\0' && i == 0) throw "Error occured in strLength function";
-	}
-}
-
-//It 100% works. Returns position varName in the sectionName in the string
-int IniEdit::getVarPos(std::string filePath, std::string sectionName, std::string varName)
-{
-	std::string allText = getAllTextInFile(filePath);
-
-	if (checkVarInSection(filePath, varName, sectionName))
-	{
-		int sectionPos = getSectionPos(filePath, sectionName);
-		return allText.find(varName, (sectionPos + strLength(sectionName)));
-	}
-	else throw "Error occured in getVarPos function";
-}
-
-//It 100% works. Returns the row number of varName in the file
-int IniEdit::getVarRowNumber(std::string filePath, std::string sectionName, std::string varName)
-{
-	std::ifstream in(filePath, std::ios::in);
-
-	std::string buffer;
-	bool sectionPassed = false;
-	int rowNumber = 0;
-
-	if (in.is_open())
-	{
-		while (std::getline(in, buffer))
-		{
-			rowNumber++;
-			if (sectionPassed && (buffer.find(varName) !=  std::string::npos)) {
-				in.close();
-				return rowNumber;
-			}
-			else if (buffer.find('[' + sectionName + ']') != std::string::npos)
-				sectionPassed = true;
-		}		
-	}
-	else throw "Error occured in getVarRowNumber function";
-
-	in.close();
-}
-
-//Maybe it works. Making a var beneath a [SectionName] or replacing it value, if it already exists
 void IniEdit::addVarInSection(std::string filePath, std::string sectionName, std::string varName, std::string varValue)
 {
 	std::string allText = getAllTextInFile(filePath);
-	int pos = getSectionPos(filePath, sectionName);
-	if (getSectionPos(filePath, sectionName) != std::string::npos && !checkVarInSection(filePath, sectionName, varName))
-	{
-		std::string partBefore = allText.substr(0, (pos + strLength(sectionName)) + 3) + "\n";
-		std::string partVar = varName + "=" + varValue;
-		std::string partAfter = allText.substr(pos + strLength(sectionName) + 3);
-		std::string newText = partBefore + partVar + partAfter;
+	int sectionPos = getSectionPos(filePath, sectionName);
 
-		overWrite(filePath, newText);
+	if (sectionPos != std::string::npos && !checkVarInSection(filePath, sectionName, varName))
+	{
+		std::string partBefore = allText.substr(0, (sectionPos + strLength('[' + sectionName + ']'))) + '\n';
+		std::string partVar = varName + '=' + varValue + '\n';
+		std::string partAfter = allText.substr(sectionPos + strLength('[' + sectionName + ']' + '\n'));
+		
+		overWrite(filePath, partBefore + partVar + partAfter);
+	}
+	
+	else if (sectionPos != std::string::npos && checkVarInSection(filePath, sectionName, varName))
+	{
+		std::string oldValue = getValueFromVar(filePath, sectionName, varName);
+		int varPos = getVarPos(filePath, sectionName, varName);
+		std::string partBefore = allText.substr(0, (varPos + strLength(varName))) + '=';
+		std::string partVar = varValue + '\n';
+		std::string partAfter = allText.substr(varPos + strLength(varName + '=') + strLength(oldValue + '\n'));
+
+		overWrite(filePath, partBefore + partVar + partAfter);
 	}
 
-	else if (getSectionPos(filePath, sectionName) != std::string::npos && checkVarInSection(filePath, sectionName, varName))
-	{
-		pos = getVarPos(filePath, sectionName, varName);
-		std::string partBefore = allText.substr(0, (pos + strLength(varName)) + 1) + "\n";
-		std::string partVar = varValue;
-		std::string partAfter = allText.substr(pos + strLength(varName) + 1 + strLength(varValue));
-		std::string newText = partBefore + partVar + partAfter;
-
-		overWrite(filePath, newText);
-	}
-
-	else throw "Error occured in addVarInSection";
+	else throw "Maybe incorrect sectionName. addVarInSection";
 }
 
-//It 100% works. Returns true, if Var named varName is already exists in Section sectionName
-bool IniEdit::checkVarInSection(std::string filePath, std::string sectionName, std::string varName)
+void IniEdit::setValueByIndex(std::string filePath, std::string sectionName, int index, std::string varValue)
 {
-	std::string allText = getAllTextInFile(filePath);
+	std::string buffer;
 
-	int sectionPos = allText.find(varName, 0);
-	int nextSectionPos = allText.find("[", (sectionPos + strLength(sectionName) + 2));
-	int varPos = allText.find(varName, sectionPos);
+	bool sectionPassed = false;
 
-	if (varPos != std::string::npos)
+	int lineNumber = 0;
+
+	std::ifstream in(filePath, std::ios::in);
+	if (in.is_open())
 	{
-		if (nextSectionPos == std::string::npos) return true;
-		else if (nextSectionPos > varPos) return true;
-		else return false;
+		for (int i = 0; ; i++)
+		{
+			std::getline(in, buffer);
+			if (buffer.find('[' + sectionName + ']') != std::string::npos)
+			{
+				lineNumber = -1;
+				sectionPassed = true;
+			}
+
+			if (buffer == "" && sectionPassed) throw "Out of range. getValueByIndex";
+			if (sectionPassed && index == lineNumber)
+			{
+				in.close();
+				addVarInSection(filePath, sectionName, buffer.substr(0, buffer.find('=')), varValue);
+				break;
+			}
+
+			lineNumber++;
+		}
 	}
-	else return false;
+	else throw "Maybe out of range. getValueByIndex";
+
 }
 
-//It 100% works. Returns the value of the var in Secion named sectionName
 std::string IniEdit::getValueFromVar(std::string filePath, std::string sectionName, std::string varName)
 {
 	std::ifstream in(filePath, std::ios::in);
 	std::string allText = getAllTextInFile(filePath);
 
-	std::string varValue;
 	std::string buffer;
 
 	if (checkVarInSection(filePath, sectionName, varName))
 	{
-		for (int i = 0; i < getVarRowNumber(filePath, sectionName, varName); i++)
+		for (int i = 0; i <= getVarLineNumber(filePath, sectionName, varName); i++)
 		{
 			std::getline(in, buffer);
 		}
 
 		return buffer.substr((buffer.find('=') + 1));
 	}
-	else throw "Error occured in getValueFromVar";
+	throw "Maybe no var in section. getValueFromVar";
+}
+
+std::string IniEdit::getValueByIndex(std::string filePath, std::string sectionName, int index)
+{
+	std::string buffer;
+
+	bool sectionPassed = false;
+
+	int lineNumber = 0;
+
+	std::ifstream in(filePath, std::ios::in);
+	if (in.is_open())
+	{
+		for (int i = 0; i < getLineCount(filePath); i++)
+		{
+			std::getline(in, buffer);
+			if (buffer.find('[' + sectionName + ']') != std::string::npos)
+			{
+				lineNumber = -1;
+				sectionPassed = true;
+			}
+
+			if (buffer == "" && sectionPassed) throw "Out of range. getValueByIndex";
+			if (sectionPassed && index == lineNumber) return buffer.substr(buffer.find('=')+1);
+
+			lineNumber++;
+		}
+		in.close();
+		throw "Maybe out of range or can't be found. getValueByIndex";
+	}
+	in.close();
+	throw "Maybe out of range. getValueByIndex";
+
 }
