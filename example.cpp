@@ -2,40 +2,43 @@
 
 int main()
 {
-	system("chcp 1251");
+	system("chcp 1251"); //'cause I need to change code page for my native language
 
 	IniEdit ini;
 	try {
-		std::string section = "Nick5";
+
 		std::string filePath = "File.ini";
-		std::string btn = "btn1";
+
+		ini.addSection(filePath, "Section1");
+		ini.addSection(filePath, "Section2");
+		ini.addSection(filePath, "Section3");
+		ini.addSection(filePath, "Section4");
 
 
+		ini.addVarInSection(filePath, "Section1", "key1k", "value1k");
+		ini.addVarInSection(filePath, "Section1", "key1k", "newValue1k");
+		ini.addVarInSection(filePath, "Section1", "key2Рє", "value2k");
+		ini.addVarInSection(filePath, "Section1", "key3k", "value3k");
 
-		ini.addSection(filePath, "Кинотеатр");
-		ini.addSection(filePath, "Театр");
-		ini.addSection(filePath, "Цирк");
+		ini.addVarInSection(filePath, "Section2", "key1c", "value1c");
+		ini.addVarInSection(filePath, "Section2", "key2c", "newValue2c");
+		ini.addVarInSection(filePath, "Section2", "key1c", "value1c");
 
-
-		ini.addVarInSection(filePath, "Кинотеатр", "ключ1к", "значение1к");
-
-
-		//ini.addVarInSection(filePath, "Заповедник", "ключ1", "значение1"); //Не добавиться, т.к. у нас нет поля заповедник
-
-		ini.addVarInSection(filePath, "Цирк", "ключ1ц", "значение1ц");
-		//ini.addVarInSection(filePath, "Цирк", "ключ1ц", "значение1ц");
-
-		ini.addVarInSection(filePath, "Кинотеатр", "ключ2к", "значение2к");
+		ini.addVarInSection(filePath, "Section4", "Рєey1o", "value1o");
 
 
-		std::cout << ini.getValueFromVar(filePath, "Кинотеатр", "ключ2к") << std::endl;
-		std::cout << ini.getValueFromVar(filePath, "Цирк", "ключ1ц") << std::endl;
+		std::cout << ini.getValueFromVar(filePath, "Section1", "key1k") << std::endl;
+		std::cout << ini.getValueFromVar(filePath, "Section2", "key2c") << std::endl;
+		std::cout << ini.getValueByIndex(filePath, "Section1", 1) << std::endl;
+
+		ini.setValueByIndex(filePath, "Section1", 2, "settedValue");
+
+		std::cout << ini.getValueByIndex(filePath, "Section1", 2) << std::endl;
 	}
 	catch (const char* msg)
 	{
 		std::cout << msg << std::endl;
 	}
-	std::cout << "В теории ошибок нет:)" << std::endl;
 
 	return 0;
 }
