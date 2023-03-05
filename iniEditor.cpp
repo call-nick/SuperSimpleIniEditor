@@ -23,7 +23,7 @@ int IniEdit::getSectionPos(std::string filePath, std::string sectionName)
 {
 	std::string allText = getAllTextInFile(filePath);
 
-	if (checkSection(filePath, sectionName)) return (int) allText.find('[' + sectionName + ']');
+	if (checkSection(filePath, sectionName)) return (int)allText.find('[' + sectionName + ']');
 	throw "There is no section. getSectionPos function";
 }
 
@@ -33,12 +33,12 @@ int IniEdit::getVarPos(std::string filePath, std::string sectionName, std::strin
 
 	if (checkVarInSection(filePath, sectionName, varName))
 	{
-		return allText.find(varName, (getSectionPos(filePath, sectionName) + strLength('[' + sectionName + ']')));
-	}
+		return 1+ allText.find('\n' + varName + '=', (getSectionPos(filePath, sectionName) + strLength('[' + sectionName + ']')));
+	}// '\n' because I need ensure that I get my var, but not the part of another and +1 because I need compensate '\n' position
 	throw "In section no var. getVarPos function";
 }
 
-int IniEdit::getVarLineNumber(std::string filePath, std::string sectionName, std::string varName)
+int IniEdit::getLineNumber(std::string filePath, std::string sectionName, std::string varName)
 {
 	std::ifstream in(filePath, std::ios::in);
 
@@ -49,8 +49,8 @@ int IniEdit::getVarLineNumber(std::string filePath, std::string sectionName, std
 	if (in.is_open())
 	{
 		while (std::getline(in, buffer))
-		{			
-			if (sectionPassed && (buffer.find(varName) != std::string::npos)) {
+		{
+			if (sectionPassed && separateString(buffer, "before") == varName) {
 				in.close();
 				return lineNumber;
 			}
@@ -60,9 +60,60 @@ int IniEdit::getVarLineNumber(std::string filePath, std::string sectionName, std
 			lineNumber++;
 		}
 	}
-	else throw "Can't open file. getVarLineNumber function";
+	else throw "Can't open file. getVarLineNumber function for vars";
 
 	in.close();
+}
+
+int IniEdit::getLineNumber(std::string filePath, std::string sectionName)
+{
+	std::ifstream in(filePath, std::ios::in);
+
+	std::string buffer;
+	int lineNumber = 0;
+
+	if (in.is_open())
+	{
+		while (std::getline(in, buffer))
+		{
+			if ((buffer.find(sectionName) != std::string::npos)) {
+				in.close();
+				return lineNumber;
+			}
+			lineNumber++;
+		}
+	}
+	else throw "Can't open file. getLineNumber function for sections";
+
+	in.close();
+	return std::string::npos;
+}
+
+int IniEdit::getNextSectionLineNumber(std::string filePath, std::string sectionName)
+{
+	std::ifstream in(filePath, std::ios::in);
+
+	std::string buffer;
+	bool sectionPassed = false;
+	int lineNumber = 0;
+
+	if (in.is_open())
+	{
+		while (std::getline(in, buffer))
+		{
+			if (sectionPassed && buffer.find("[") != std::string::npos) return lineNumber;
+			else if ((buffer.find(sectionName) != std::string::npos))
+			{
+				sectionPassed = true;
+			}
+			lineNumber++;
+		}
+		return lineNumber;
+	}
+	else throw "Can't open file. getNextSectionLineNumber function for sections";
+
+	in.close();
+	return std::string::npos;
 }
 
 int IniEdit::getLineCount(std::string filePath)
@@ -94,18 +145,29 @@ bool IniEdit::checkSection(std::string filePath, std::string sectionName)
 
 bool IniEdit::checkVarInSection(std::string filePath, std::string sectionName, std::string varName)
 {
-	std::string allText = getAllTextInFile(filePath);
+	std::ifstream in(filePath, std::ios::in);
 
-	int sectionPos = getSectionPos(filePath, sectionName);
-	int nextSectionPos = allText.find("[", (sectionPos + strLength('[' + sectionName + ']')));  //This could be a vulnerability, because the [ symbol may be contained in var name or varValue name
-	int varPos = allText.find(varName, sectionPos);
+	std::string buffer;
+	bool sectionPassed = false;
 
-	if (varPos != std::string::npos)
+	if (in.is_open())
 	{
-		if (nextSectionPos == std::string::npos) return true;
-		else if (nextSectionPos > varPos) return true;
+		while (std::getline(in, buffer))
+		{
+			if (sectionPassed && separateString(buffer, "before") == varName) 
+			{
+				in.close();
+				return true;
+			}
+			else if (sectionPassed && buffer.find('[') != std::string::npos)
+				return false;
+			else if (buffer.find('[' + sectionName + ']') != std::string::npos) //This could be a vulnerability, because the [ symbol may be contained in var name or varValue name
+				sectionPassed = true;
+		}
+		return false;
 	}
-	return false;
+	else throw "Can't open file. checkVarInSection function";
+
 }
 
 std::string IniEdit::getAllTextInFile(std::string filePath)
@@ -125,6 +187,13 @@ std::string IniEdit::getAllTextInFile(std::string filePath)
 	in.close();
 
 	return allText;
+}
+
+std::string IniEdit::separateString(std::string str, std::string mode)
+{
+	if (mode == "after")
+	return str.substr(str.find('=')+1);
+	return str.substr(0, str.find('='));
 }
 
 void IniEdit::addSection(std::string filePath, std::string sectionName)
@@ -147,20 +216,20 @@ void IniEdit::addVarInSection(std::string filePath, std::string sectionName, std
 
 	if (sectionPos != std::string::npos && !checkVarInSection(filePath, sectionName, varName))
 	{
-		std::string partBefore = allText.substr(0, (sectionPos + strLength('[' + sectionName + ']'))) + '\n';
-		std::string partVar = varName + '=' + varValue + '\n';
-		std::string partAfter = allText.substr(sectionPos + strLength('[' + sectionName + ']' + '\n'));
-		
+		std::string partBefore = allText.substr(0, (sectionPos + strLength('[' + sectionName + ']' + '\n')));
+		std::string partVar = varName + '=' + varValue;
+		std::string partAfter = allText.substr(sectionPos + strLength('[' + sectionName + ']'));
+
 		overWrite(filePath, partBefore + partVar + partAfter);
 	}
-	
+
 	else if (sectionPos != std::string::npos && checkVarInSection(filePath, sectionName, varName))
 	{
 		std::string oldValue = getValueFromVar(filePath, sectionName, varName);
 		int varPos = getVarPos(filePath, sectionName, varName);
 		std::string partBefore = allText.substr(0, (varPos + strLength(varName))) + '=';
-		std::string partVar = varValue + '\n';
-		std::string partAfter = allText.substr(varPos + strLength(varName + '=') + strLength(oldValue + '\n'));
+		std::string partVar = varValue;
+		std::string partAfter = allText.substr(varPos + strLength(varName + '=') + strLength(oldValue));
 
 		overWrite(filePath, partBefore + partVar + partAfter);
 	}
@@ -188,7 +257,7 @@ void IniEdit::setValueByIndex(std::string filePath, std::string sectionName, int
 				sectionPassed = true;
 			}
 
-			if (buffer == "" && sectionPassed) throw "Out of range. getValueByIndex";
+			if (buffer == "" && sectionPassed) throw "Empty string. setValueByIndex";
 			if (sectionPassed && index == lineNumber)
 			{
 				in.close();
@@ -203,6 +272,15 @@ void IniEdit::setValueByIndex(std::string filePath, std::string sectionName, int
 
 }
 
+void IniEdit::setVarsInSection(std::string filePath, std::string sectionName, std::string varValue)
+{
+	int sectionLineNumber = getLineNumber(filePath, sectionName);
+	int nextSectionLineNumber = getNextSectionLineNumber(filePath, sectionName) -3;
+	for (int i = 0; i < nextSectionLineNumber - sectionLineNumber; i++)
+		setValueByIndex(filePath, sectionName, i, varValue);
+	
+}
+
 std::string IniEdit::getValueFromVar(std::string filePath, std::string sectionName, std::string varName)
 {
 	std::ifstream in(filePath, std::ios::in);
@@ -212,12 +290,10 @@ std::string IniEdit::getValueFromVar(std::string filePath, std::string sectionNa
 
 	if (checkVarInSection(filePath, sectionName, varName))
 	{
-		for (int i = 0; i <= getVarLineNumber(filePath, sectionName, varName); i++)
-		{
+		for (int i = 0; i <= getLineNumber(filePath, sectionName, varName); i++)
 			std::getline(in, buffer);
-		}
 
-		return buffer.substr((buffer.find('=') + 1));
+		return separateString(buffer, "after");
 	}
 	throw "Maybe no var in section. getValueFromVar";
 }
@@ -243,7 +319,7 @@ std::string IniEdit::getValueByIndex(std::string filePath, std::string sectionNa
 			}
 
 			if (buffer == "" && sectionPassed) throw "Out of range. getValueByIndex";
-			if (sectionPassed && index == lineNumber) return buffer.substr(buffer.find('=')+1);
+			if (sectionPassed && index == lineNumber) return buffer.substr(buffer.find('=') + 1);
 
 			lineNumber++;
 		}
