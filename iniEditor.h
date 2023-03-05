@@ -15,10 +15,16 @@ class IniEdit
 	int getSectionPos(std::string filePath, std::string sectionName);
 
 	//Returns position varName in the file named filePath in the Section sectionName if it exists
-	int getVarPos(std::string filePath, std::string sectionName,  std::string varName);
+	int getVarPos(std::string filePath, std::string sectionName, std::string varName);
 
 	//Returns the line number of varName in the file starting from 0
-	int getVarLineNumber(std::string filePath, std::string sectionName, std::string varName);
+	int getLineNumber(std::string filePath, std::string sectionName, std::string varName);
+
+	//Returns the line number of section in the file starting from 0
+	int getLineNumber(std::string filePath, std::string sectionName);
+
+	//Returns the line number of next section follows the sectionName in the file
+	int getNextSectionLineNumber(std::string filePath, std::string sectionName);
 
 	//Returns the number of lines in the file
 	int getLineCount(std::string filePath);
@@ -31,7 +37,10 @@ class IniEdit
 
 	//Returns string contains all the text of the file with \n symbols
 	std::string getAllTextInFile(std::string filePath);
-		
+
+	//Returns string separated from '='
+	std::string separateString(std::string str, std::string mode);
+
 public:
 
 	//Creating new Section, named sectionNamed, if it doesn't exist
@@ -40,7 +49,7 @@ public:
 	//Making a var beneath a [SectionName] or replacing it value, if it already exists
 	void addVarInSection(std::string filePath, std::string sectionName, std::string varName, std::string varValue);
 
-	//Making all vars that contains in Section sectionName equal to varValue
+	//Making all vars that are contained in Section sectionName equal to varValue
 	void setVarsInSection(std::string filePath, std::string sectionName, std::string varValue);
 
 	//Allow to refer to varName in sectionName by its index starting with 0 from sectionName
