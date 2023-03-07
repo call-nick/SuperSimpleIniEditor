@@ -23,7 +23,7 @@ int IniEdit::getSectionPos(std::string filePath, std::string sectionName)
 {
 	std::string allText = getAllTextInFile(filePath);
 
-	if (checkSection(filePath, sectionName)) return (int)allText.find('[' + sectionName + ']');
+	if (checkSection(filePath, sectionName)) return (int) allText.find('[' + sectionName + ']');
 	throw "There is no section. getSectionPos function";
 }
 
@@ -33,7 +33,7 @@ int IniEdit::getVarPos(std::string filePath, std::string sectionName, std::strin
 
 	if (checkVarInSection(filePath, sectionName, varName))
 	{
-		return 1+ allText.find('\n' + varName + '=', (getSectionPos(filePath, sectionName) + strLength('[' + sectionName + ']')));
+		return 1 + allText.find('\n' + varName + '=', (getSectionPos(filePath, sectionName) + strLength('[' + sectionName + ']')));
 	}// '\n' because I need ensure that I get my var, but not the part of another and +1 because I need compensate '\n' position
 	throw "In section no var. getVarPos function";
 }
@@ -154,7 +154,7 @@ bool IniEdit::checkVarInSection(std::string filePath, std::string sectionName, s
 	{
 		while (std::getline(in, buffer))
 		{
-			if (sectionPassed && separateString(buffer, "before") == varName) 
+			if (sectionPassed && separateString(buffer, "before") == varName)
 			{
 				in.close();
 				return true;
@@ -192,7 +192,7 @@ std::string IniEdit::getAllTextInFile(std::string filePath)
 std::string IniEdit::separateString(std::string str, std::string mode)
 {
 	if (mode == "after")
-	return str.substr(str.find('=')+1);
+		return str.substr(str.find('=') + 1);
 	return str.substr(0, str.find('='));
 }
 
@@ -257,7 +257,7 @@ void IniEdit::setValueByIndex(std::string filePath, std::string sectionName, int
 				sectionPassed = true;
 			}
 
-			if (buffer == "" && sectionPassed) throw "Empty string. setValueByIndex";
+			if (buffer == "" && sectionPassed) return;
 			if (sectionPassed && index == lineNumber)
 			{
 				in.close();
@@ -275,10 +275,26 @@ void IniEdit::setValueByIndex(std::string filePath, std::string sectionName, int
 void IniEdit::setVarsInSection(std::string filePath, std::string sectionName, std::string varValue)
 {
 	int sectionLineNumber = getLineNumber(filePath, sectionName);
-	int nextSectionLineNumber = getNextSectionLineNumber(filePath, sectionName) -3;
+	int nextSectionLineNumber = getNextSectionLineNumber(filePath, sectionName);
 	for (int i = 0; i < nextSectionLineNumber - sectionLineNumber; i++)
 		setValueByIndex(filePath, sectionName, i, varValue);
-	
+
+}
+
+void IniEdit::deleteSection(std::string filePath, std::string sectionName)
+{
+	//Добавить проверку, а существует ли такая секция вообще
+
+	std::string allText = getAllTextInFile(filePath);
+
+	std::string partBefore = allText.substr(0, getSectionPos(filePath, sectionName) - strLength("[")) + "\n";
+	std::string partAfter = "";
+	if (getNextSectionName(filePath, sectionName) == "there is no next section")
+		partAfter = "";
+	else
+		partAfter = allText.substr(getSectionPos(filePath, getNextSectionName(filePath, sectionName)));
+
+	overWrite(filePath, partBefore + partAfter);
 }
 
 std::string IniEdit::getValueFromVar(std::string filePath, std::string sectionName, std::string varName)
@@ -328,5 +344,29 @@ std::string IniEdit::getValueByIndex(std::string filePath, std::string sectionNa
 	}
 	in.close();
 	throw "Maybe out of range. getValueByIndex";
-
 }
+	std::string IniEdit::getNextSectionName(std::string filePath, std::string sectionName)
+	{
+		std::ifstream in(filePath, std::ios::in);
+
+		std::string buffer;
+		bool sectionPassed = false;
+		int lineNumber = 0;
+
+		if (in.is_open())
+		{
+			while (std::getline(in, buffer))
+			{
+				if (sectionPassed && buffer.find("[") != std::string::npos) return buffer.substr(1, strLength(buffer)-2); //Изменить так, чтобы не пришлось ставить минус два
+				else if ((buffer.find(sectionName) != std::string::npos))
+				{
+					sectionPassed = true;
+				}
+				lineNumber++;
+			}
+			in.close();
+			return "there is no next section";
+		}
+		else throw "Can't open file. getNextSectionName function";
+
+	}
