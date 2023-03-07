@@ -55,10 +55,17 @@ public:
 	//Allow to refer to varName in sectionName by its index starting with 0 from sectionName
 	void setValueByIndex(std::string filePath, std::string sectionName, int index, std::string varValue);
 
+	//Delete Section named sectionName and all vars in it
+	void deleteSection(std::string filePath, std::string sectionName);
+
 	//Returns the value of the var in Section named sectionName if varName exists
 	std::string getValueFromVar(std::string filePath, std::string sectionName, std::string varName);
 
 	//Allow to refer to varName in sectionName by its index starting with 0 from sectionName
 	std::string getValueByIndex(std::string filePath, std::string sectionName, int index);
+
+	//Returns sectipon name located after sectionName
+	std::string getNextSectionName(std::string filePath, std::string sectionName);
+
 
 };
