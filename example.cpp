@@ -5,127 +5,116 @@ using std::cout;
 using std::endl;
 using std::to_string;
 
-
+//testing addSection, addVarInSection,
 bool test1()
 {
 	IniEdit  ini;
-	string filePath = "file.ini"; //You can find it at the root of the project.
+	string filePath = "test1.ini"; //You can find it at the root of the project.
 
 	try
 	{
 
-		ini.addSection(filePath, "Device settings");
-		ini.addSection(filePath, "Other");
+		ini.addSection(filePath, "Section1");
+		ini.addSection(filePath, "Section2");
+		ini.addSection(filePath, "Section3 with spaces");
+		ini.addSection(filePath, "Section4");
 
-		ini.addVarInSection(filePath, "Device settings", "brightness ", " 100%");
-		ini.addVarInSection(filePath, "Device settings", "volume ", " 60%");
+		for (int i = 0; i < 20; i++)
+			ini.addVarInSection(filePath, "Section1", to_string(i), "0");
 
-		ini.addVarInSection(filePath, "Other", "cpu ", " 40%");
-		ini.addVarInSection(filePath, "Device settings", "weight ", " 200g");
+		for (int i = 19; i >= 0; i--)
+			ini.addVarInSection(filePath, "Section2", to_string(i), to_string(i));
 
-		ini.addVarInSection(filePath, "Other", "cpu ", " 70%");
-		ini.addVarInSection(filePath, "Device settings", "weight ", " 250g");
+		for (int i = 0; i < 14; i++)
+			ini.addVarInSection(filePath, "Section2", to_string(i), "1");
 
-		//ini.addVarInSection(filePath, "Device settings", "brightness ", " 80%");
-		ini.addVarInSection(filePath, "Device settings", "volume ", " 45%");
-
-		ini.addVarInSection(filePath, "Other", "memory ", " 30%");
-
-		string str1 = ini.getValueFromVar(filePath, "Device settings", "brightness ");
-		string str2 = ini.getValueFromVar(filePath, "Other", "memory ");
-
-
-		cout << "Settings -> brightness " << str1 << endl;
-		cout << "Other -> memory " << str2 << endl;
-
-
-		ini.addSection(filePath, "Loop test1");
-
-		for (int i = 0; i < 15; i++)
-			ini.addVarInSection(filePath, "Loop test1", to_string(i), "0");
-
-		ini.addSection(filePath, "Loop test2");
-		for (int i = 0; i < 15; i++)
-			ini.addVarInSection(filePath, "Loop test2", to_string(i), "0");
-
-
-		ini.addSection(filePath, "Loop test2");
-		for (int i = 14; i >= 0; i--)
-			ini.addVarInSection(filePath, "Loop test2", to_string(i), "1");
-
-		ini.addSection(filePath, "Reverse loop test");
-		for (int i = 14; i >= 0; i--)
-			ini.addVarInSection(filePath, "Reverse loop test", to_string(i), to_string(i));
-
-		for (int i = 0; i < 15; i++)
-			cout << ini.getValueByIndex(filePath, "Reverse loop test", i) << endl;
-
-
-		for (int i = 14; i >= 0; i--)
-			ini.setValueByIndex(filePath, "Loop test1", i, to_string(i));
-
-
-		ini.setVarsInSection(filePath, "Loop test1", "0");
-
-
+		for (int i = 0; i < 20; i++)
+			ini.addVarInSection(filePath, "Section4", to_string(i), "0");
 	}
 
 	catch (const char* msg)
 	{
 		cout << msg << endl;
+		return false;
 	}
 
 	return true;
 
 }
 
+//testing copyFromTO, getValueByIndex, addVarInSection, setValueByIndex, getValueByIndex, renameSection
 bool test2()
 {
 	IniEdit  ini;
-	string filePath = "file2.ini"; //You can find it at the root of the project.
+	string filePath = "test2.ini";
+
+
+	ini.copyFromTo("test1.ini", filePath);
+
+	string sectionIndex2 = ini.getValueByIndex(filePath, 3);
 
 	try
 	{
-
-		ini.addSection(filePath, "Loop test1");
+		for (int i = 0; i < 20; i++)
+			ini.addVarInSection(filePath, "Section3 with spaces", to_string(i), "0");
 
 		for (int i = 0; i < 20; i++)
-			ini.addVarInSection(filePath, "Loop test1", to_string(i), "0");
-
-		ini.addSection(filePath, "Loop test2");
-		for (int i = 19; i >= 0; i--)
-			ini.addVarInSection(filePath, "Loop test2", to_string(i), to_string(i));
-
-		//for (int i = 1; i > 15; i++)
-		//ini.addVarInSection(filePath, "Loop test2", to_string(i), "1");
-
-
-		ini.addSection(filePath, "Reverse loop test");
-		for (int i = 19; i >= 0; i--)
-			ini.addVarInSection(filePath, "Reverse loop test", to_string(i), to_string(i));
-
-		//for (int i = 0; i < 20; i++)
-			//cout << ini.getValueByIndex(filePath, "Reverse loop test", i) << endl;
-
-
-		//for (int i = 14; i >= 0; i--)
-			//ini.setValueByIndex(filePath, "Loop test1", i, to_string(i));
-
-
-		ini.addSection(filePath, "New section");
-		for (int i = 19; i >= 0; i--)
-			ini.addVarInSection(filePath, "New section", to_string(i), to_string(i-5));
+			ini.setValueByIndex(filePath, "Section3 with spaces", i, to_string(i));
 
 		for (int i = 0; i < 20; i++)
-			ini.setValueByIndex(filePath, "New section", i, ini.getValueByIndex(filePath, "New section", i));
-	
-		ini.setVarsInSection(filePath, "Loop test2", "You all equal me");
+			cout << ini.getValueByIndex(filePath, "Section3 with spaces", i) << " ";
+
+		for (int i = 19; i >= 0; i--)
+			ini.setValueByIndex(filePath, sectionIndex2, i, to_string(i));
+
+		for (int i = 0; i < 3; i++)
+			cout << "\n" << ini.getValueByIndex(filePath, i) << " ";
+
+		if (ini.getValueByIndex(filePath, 3) == "Section4")
+			ini.renameSection(filePath, "Section4", "Renamed");
+		else
+			ini.renameSection(filePath, "Renamed", "Section4");
+
+		ini.setValueByIndex(filePath, 0, "SuperSection");
 
 	}
 
 	catch (const char* msg)
 	{
 		cout << msg << endl;
+		return false;
+	}
+
+	return true;
+}
+
+//testing copyFromTO, deleteSection, getSectionsCount, deleteVarInSection, getValueByIndex, renameSection
+bool test3()
+{
+	IniEdit  ini;
+	string filePath = "test3.ini";
+
+	ini.copyFromTo("test2.ini", filePath);
+
+	try
+	{
+		ini.deleteSection(filePath, "Section3 with spaces");
+
+		cout << "\nNumber of sections: " << ini.getSectionsCount(filePath);
+
+		ini.deleteVarInSection(filePath, "Renamed", "4");
+		ini.deleteVarInSection(filePath, "SuperSection", "3");
+
+		ini.deleteVarInSection(filePath, "Renamed", "17");
+		ini.deleteVarInSection(filePath, "SuperSection", "8");
+
+		ini.setVarsInSection(filePath, "SuperSection", "all equal");
+	}
+
+	catch (const char* msg)
+	{
+		cout << msg << endl;
+		return false;
 	}
 
 	return true;
@@ -133,9 +122,18 @@ bool test2()
 
 int main(int argc, char* arg[])
 {
-	if (test1()) cout << "\nTest1 succeed";
-	if (test2()) cout << "\nTest2 succeed";
-	
+
+	system("chcp 1251");
+
+
+	cout << "\nTest1:";
+	test1() ? cout << "\nsucceed\n" : cout << "\nfailed";
+
+	cout << "\nTest2:";
+	test2() ? cout << "\nsucceed\n" : cout << "\nfailed";
+
+	cout << "\nTest3:";
+	test3() ? cout << "\nsucceed\n": cout << "\nfailed";
 
 	return 0;
 }
