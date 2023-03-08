@@ -5,5 +5,3 @@
  You can see all the examples of using in example.cpp.
  
  What function do and return you can see in comment in iniEditor.h
- 
- You can use it absolutely free. (I haven’t read the license names yet).
